@@ -1,1 +1,5 @@
-import './page/event'
+console.log('index');
+
+require('./a');
+
+require('./b')
