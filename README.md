@@ -1,96 +1,115 @@
-# webpack
-webpack-study
+# 入口和出口的最佳实践 {ignore}
 
-# webpack 编译过程 {ignore}
+具体情况具体分析
 
-[toc]
+下面是一些经典场景
 
-webpack 的作用是将源代码编译（构建、打包）成最终代码
+## 一个页面一个JS
 
-![](assets/2020-01-09-10-26-15.png)
+![](assets/2020-01-10-12-00-28.png)
 
-整个过程大致分为三个步骤
+源码结构
 
-1. 初始化
-2. 编译
-3. 输出
+```
+|—— src
+    |—— pageA   页面A的代码目录
+        |—— index.js 页面A的启动模块
+        |—— ...
+    |—— pageB   页面B的代码目录
+        |—— index.js 页面B的启动模块
+        |—— ...
+    |—— pageC   页面C的代码目录
+        |—— main1.js 页面C的启动模块1 例如：主功能
+        |—— main2.js 页面C的启动模块2 例如：实现访问统计的额外功能
+        |—— ...
+    |—— common  公共代码目录
+        |—— ...
+```
 
-![](assets/2020-01-09-10-53-28.png)
+webpack配置
 
-## 初始化
+```js
+module.exports = {
+    entry:{
+        pageA: "./src/pageA/index.js",
+        pageB: "./src/pageB/index.js",
+        pageC: ["./src/pageC/main1.js", "./src/pageC/main2.js"]
+    },
+    output:{
+        filename:"[name].[chunkhash:5].js"
+    }
+}
+```
 
-此阶段，webpack会将**CLI参数**、**配置文件**、**默认配置**进行融合，形成一个最终的配置对象。
+这种方式适用于页面之间的功能差异巨大、公共代码较少的情况，这种情况下打包出来的最终代码不会有太多重复
 
-对配置的处理过程是依托一个第三方库```yargs```完成的
+## 一个页面多个JS
 
-此阶段相对比较简单，主要是为接下来的编译阶段做必要的准备
+![](assets/2020-01-10-12-38-03.png)
 
-目前，可以简单的理解为，初始化阶段主要用于产生一个最终的配置
+源码结构
 
-## 编译
+```
+|—— src
+    |—— pageA   页面A的代码目录
+        |—— index.js 页面A的启动模块
+        |—— ...
+    |—— pageB   页面B的代码目录
+        |—— index.js 页面B的启动模块
+        |—— ...
+    |—— statistics   用于统计访问人数功能目录
+        |—— index.js 启动模块
+        |—— ...
+    |—— common  公共代码目录
+        |—— ...
+```
 
-1. **创建chunk**
+webpack配置
 
-chunk是webpack在内部构建过程中的一个概念，译为```块```，它表示通过某个入口找到的所有依赖的统称。
+```js
+module.exports = {
+    entry:{
+        pageA: "./src/pageA/index.js",
+        pageB: "./src/pageB/index.js",
+        statistics: "./src/statistics/index.js"
+    },
+    output:{
+        filename:"[name].[chunkhash:5].js"
+    }
+}
+```
 
-根据入口模块（默认为```./src/index.js```）创建一个chunk
+这种方式适用于页面之间有一些**独立**、相同的功能，专门使用一个chunk抽离这部分JS有利于浏览器更好的缓存这部分内容。
 
-![](assets/2020-01-09-11-54-08.png)
+> 思考：为什么不使用多启动模块的方式？
 
-每个chunk都有至少两个属性：
+## 单页应用
 
-- name：默认为main
-- id：唯一编号，开发环境和name相同，生产环境是一个数字，从0开始
+所谓单页应用，是指整个网站（或网站的某一个功能块）只有一个页面，页面中的内容全部靠JS创建和控制。 vue和react都是实现单页应用的利器。
 
-2. **构建所有依赖模块**
+![](assets/2020-01-10-12-44-13.png)
 
-![](assets/2020-01-09-12-32-38.png)
+源码结构
 
-> AST在线测试工具：https://astexplorer.net/
+```
+|—— src
+    |—— subFunc   子功能目录
+        |—— ...
+    |—— subFunc   子功能目录
+        |—— ...
+    |—— common  公共代码目录
+        |—— ...
+    |—— index.js
+```
 
-简图
+webpack配置
 
-![](assets/2020-01-09-12-35-05.png)
+```js
+module.exports = {
+    entry: "./src/index.js",
+    output:{
+        filename:"index.[hash:5].js"
+    }
+}
+```
 
-3. **产生chunk assets**
-
-在第二步完成后，chunk中会产生一个模块列表，列表中包含了**模块id**和**模块转换后的代码**
-
-接下来，webpack会根据配置为chunk生成一个资源列表，即```chunk assets```，资源列表可以理解为是生成到最终文件的文件名和文件内容
-
-![](assets/2020-01-09-12-39-16.png)
-
-> chunk hash是根据所有chunk assets的内容生成的一个hash字符串
-> hash：一种算法，具体有很多分类，特点是将一个任意长度的字符串转换为一个固定长度的字符串，而且可以保证原始内容不变，产生的hash字符串就不变
-
-简图
-
-![](assets/2020-01-09-12-43-52.png)
-
-4. **合并chunk assets**
-
-将多个chunk的assets合并到一起，并产生一个总的hash
-
-![](assets/2020-01-09-12-47-43.png)
-
-## 输出
-
-此步骤非常简单，webpack将利用node中的fs模块（文件处理模块），根据编译产生的总的assets，生成相应的文件。
-
-![](assets/2020-01-09-12-54-34.png)
-
-## 总过程
-
-![](assets/2020-01-09-15-51-07.png)
-
-![](assets/2020-01-09-12-32-38.png)
-
-**涉及术语**
-
-1. module：模块，分割的代码单元，webpack中的模块可以是任何内容的文件，不仅限于JS
-2. chunk：webpack内部构建模块的块，一个chunk中包含多个模块，这些模块是从入口模块通过依赖分析得来的
-3. bundle：chunk构建好模块后会生成chunk的资源清单，清单中的每一项就是一个bundle，可以认为bundle就是最终生成的文件
-4. hash：最终的资源清单所有内容联合生成的hash值
-5. chunkhash：chunk生成的资源清单内容联合生成的hash值
-6. chunkname：chunk的名称，如果没有配置则使用main
-7. id：通常指chunk的唯一编号，如果在开发环境下构建，和chunkname相同；如果是生产环境下构建，则使用一个从0开始的数字进行编号
