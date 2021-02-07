@@ -9,13 +9,13 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/a.js":
-/*!******************!*\
-  !*** ./src/a.js ***!
-  \******************/
+/***/ "./src/assets/index.css":
+/*!******************************!*\
+  !*** ./src/assets/index.css ***!
+  \******************************/
 /***/ ((module) => {
 
-eval("console.log('module a');\n\n// export var a = 1;\n// export default b = 2;\n\nmodule.exports = \"a\";\n\n//# sourceURL=webpack://study/./src/a.js?");
+eval("var style = document.createElement('style');\n  style.innerHTML = `body {\n  background-color: #000;\n  color: #333;\n}\n\n`;\n  document.head.appendChild(style);\n  module.exports = `body {\n  background-color: #000;\n  color: #333;\n}\n\n`;\n\n//# sourceURL=webpack://study/./src/assets/index.css?");
 
 /***/ })
 
@@ -49,7 +49,7 @@ eval("console.log('module a');\n\n// export var a = 1;\n// export default b = 2;
 /*!**********************!*\
   !*** ./src/index.js ***!
   \**********************/
-eval("var a = 1;\n\n\n__webpack_require__(/*! ./a */ \"./src/a.js\")\n\n//# sourceURL=webpack://study/./src/index.js?");
+eval("\nvar css = __webpack_require__(/*! ./assets/index.css */ \"./src/assets/index.css\")\n\nconsole.log(css);\n\n//# sourceURL=webpack://study/./src/index.js?");
 })();
 
 /******/ })()

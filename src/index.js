@@ -1,4 +1,4 @@
-var a = 1;
 
+var css = require('./assets/index.css')
 
-require('./a')
+console.log(css);
