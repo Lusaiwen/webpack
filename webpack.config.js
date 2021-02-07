@@ -2,12 +2,16 @@ var path = require('path');
 
 module.exports = {
   mode: 'development',
-  entry: {
-    main: './src/index.js', //属性名： chunk的名称， 属性值： 入口模块
-    a: ['./src/a.js', './src/index.js']
-  },
-  output: {
-    path: path.resolve(__dirname, 'target'), //必须是一个绝对路径
-    filename: '[name][hash:5].js' //配置的合并的js文件的规则
-  },
+  module: {
+    rules: [
+      {
+        test: /index\.js$/,//正则表达式，匹配的路径
+        use: ['./loaders/loader1.js', './loaders/loader2.js']
+      }, //规则一
+      {
+        test: /\.js$/,
+        use: ['./loaders/loader3.js', './loaders/loader4.js']
+      }
+    ]
+  }
 };

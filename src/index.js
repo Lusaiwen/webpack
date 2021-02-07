@@ -1,4 +1,4 @@
-console.log('index');
+var a = 1;
 
 
-// require('./a')
+require('./a')

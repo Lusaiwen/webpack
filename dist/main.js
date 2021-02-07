@@ -13,19 +13,9 @@
 /*!******************!*\
   !*** ./src/a.js ***!
   \******************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-eval("__webpack_require__(/*! ./b */ \"./src/b.js\");\n\nconsole.log('module a');\n\nmodule.exports = 'a';\n\n//# sourceURL=webpack://study/./src/a.js?");
-
-/***/ }),
-
-/***/ "./src/b.js":
-/*!******************!*\
-  !*** ./src/b.js ***!
-  \******************/
 /***/ ((module) => {
 
-eval("console.log('b module');\n\nmodule.exports = 'b';\n\n\n//# sourceURL=webpack://study/./src/b.js?");
+eval("console.log('module a');\n\n// export var a = 1;\n// export default b = 2;\n\nmodule.exports = \"a\";\n\n//# sourceURL=webpack://study/./src/a.js?");
 
 /***/ })
 
@@ -59,7 +49,7 @@ eval("console.log('b module');\n\nmodule.exports = 'b';\n\n\n//# sourceURL=webpa
 /*!**********************!*\
   !*** ./src/index.js ***!
   \**********************/
-eval("__webpack_require__(/*! ./a */ \"./src/a.js\");\n\n//# sourceURL=webpack://study/./src/index.js?");
+eval("var a = 1;\n\n\n__webpack_require__(/*! ./a */ \"./src/a.js\")\n\n//# sourceURL=webpack://study/./src/index.js?");
 })();
 
 /******/ })()
