@@ -1,4 +1,8 @@
 
-var css = require('./assets/index.css')
+var src = require('./assets/webpack.png')
 
-console.log(css);
+var img = document.createElement('img')
+
+img.src = src
+
+document.body.appendChild(img);
