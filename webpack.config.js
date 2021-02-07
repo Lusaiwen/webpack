@@ -1,13 +1,7 @@
-var path = require('path');
+var MyPlugin = require('./plugin/index');
 
 module.exports = {
   mode: 'development',
-  module: {
-    rules: [
-      {
-        test: /.(jpg)|(png)|(gif)$/,
-        use: ['./loaders/img-loader.js']
-      }
-    ]
-  }
+  watch: true,
+  plugins: [new MyPlugin()],
 };
