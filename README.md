@@ -1,159 +1,218 @@
-# 其他细节配置 {ignore}
-
 [toc]
 
-## context
+
+# 常用配置
+
+## 清除文件目录 -- clean-webpack-plugin
 
 ```js
-context: path.resolve(__dirname, "app")
+  output: {
+    filename: '[name].[chunkhash:5].js',
+    path: path.resolve(__dirname, 'dist'),  //用于清除文件目录时，必写
+  }
+  plugins: [new CleanWebpackPlugin()],
 ```
 
-该配置会影响入口和loaders的解析，入口和loaders的相对路径会以context的配置作为基准路径，这样，你的配置会独立于CWD（current working directory 当前执行路径）
-
-## output
-
-### library
+## 自动生成页面 -- html-webpack-plugin
 
 ```js
-library: "abc"
+  new HtmlWebpackPlugin({
+    template: './public/index.html',
+    chunks: ['home'],
+    filename: 'home.html',
+  }),
+```
+**当写了chunks时，不能使用webpack-dev-server**
+
+
+## 复制静态资源 -- copy-webpack-plugin
+
+```js
+  new CopyWebpackPlugin({
+    patterns: [
+      {
+        from: './public',
+        to: './',
+        filter: async (resourcePath) => {
+          if(/\.html$/.test(resourcePath)){
+            return false;
+          }
+          return true;
+        },
+      },
+    ],
+  }),
 ```
 
-这样一来，打包后的结果中，会将自执行函数的执行结果暴露给abc 
+## 开发服务器  --  webpack-dev-server
 
-### libraryTarget
+
+在**开发阶段**，目前遇到的问题是打包、运行、调试过程过于繁琐，回顾一下我们的操作流程：
+
+1. 编写代码
+2. 控制台运行命令完成打包
+3. 打开页面查看效果
+4. 继续编写代码，回到步骤2
+
+并且，我们往往希望把最终生成的代码和页面部署到服务器上，来模拟真实环境
+
+为了解决这些问题，webpack官方制作了一个单独的库：**webpack-dev-server**
+
+它**既不是plugin也不是loader**
+
+先来看看它怎么用
+
+1. 安装
+2. 执行```webpack-dev-server```命令
+
+```webpack-dev-server```命令几乎支持所有的webpack命令参数，如```--config```、```-env```等等，你可以把它当作webpack命令使用
+
+这个命令是专门为开发阶段服务的，真正部署的时候还是得使用webpack命令
+
+当我们执行```webpack-dev-server```命令后，它做了以下操作：
+
+1. 内部执行webpack命令，传递命令参数
+2. 开启watch
+3. 注册hooks：类似于plugin，webpack-dev-server会向webpack中注册一些钩子函数，主要功能如下：
+   1. 将资源列表（aseets）保存起来
+   2. 禁止webpack输出文件
+4. 用express开启一个服务器，监听某个端口，当请求到达后，根据请求的路径，给予相应的资源内容
+
+**配置**
+
+针对webpack-dev-server的配置，参考：https://www.webpackjs.com/configuration/dev-server/
+
+常见配置有：
+
+- port：配置监听端口
+- proxy：配置代理，常用于跨域访问
+- stats：配置控制台输出内容
+
+
+## 开发服务器  --  webpack-dev-server
+
+
+在**开发阶段**，目前遇到的问题是打包、运行、调试过程过于繁琐，回顾一下我们的操作流程：
+
+1. 编写代码
+2. 控制台运行命令完成打包
+3. 打开页面查看效果
+4. 继续编写代码，回到步骤2
+
+并且，我们往往希望把最终生成的代码和页面部署到服务器上，来模拟真实环境
+
+为了解决这些问题，webpack官方制作了一个单独的库：**webpack-dev-server**
+
+它**既不是plugin也不是loader**
+
+先来看看它怎么用
+
+1. 安装
+2. 执行```webpack-dev-server```命令
+
+```webpack-dev-server```命令几乎支持所有的webpack命令参数，如```--config```、```-env```等等，你可以把它当作webpack命令使用
+
+这个命令是专门为开发阶段服务的，真正部署的时候还是得使用webpack命令
+
+当我们执行```webpack-dev-server```命令后，它做了以下操作：
+
+1. 内部执行webpack命令，传递命令参数
+2. 开启watch
+3. 注册hooks：类似于plugin，webpack-dev-server会向webpack中注册一些钩子函数，主要功能如下：
+   1. 将资源列表（aseets）保存起来
+   2. 禁止webpack输出文件
+4. 用express开启一个服务器，监听某个端口，当请求到达后，根据请求的路径，给予相应的资源内容
+
+**配置**
+
+针对webpack-dev-server的配置，参考：https://www.webpackjs.com/configuration/dev-server/
+
+常见配置有：
+
+- port：配置监听端口
+- proxy：配置代理，常用于跨域访问
+- stats：配置控制台输出内容
+
+
+## 文件处理  --  file-loader 
+生成依赖的文件到输出目录，然后将模块文件设置为：导出一个路径\
 
 ```js
-libraryTarget: "var"
-```
-
-该配置可以更加精细的控制如何暴露入口包的导出结果
-
-其他可用的值有：
-
-- var：默认值，暴露给一个普通变量
-- window：暴露给window对象的一个属性
-- this：暴露给this的一个属性
-- global：暴露给global的一个属性
-- commonjs：暴露给exports的一个属性
-- 其他：https://www.webpackjs.com/configuration/output/#output-librarytarget
-
-## target
-
-```js
-target:"web" //默认值
-```
-
-设置打包结果最终要运行的环境，常用值有
-
-- web: 打包后的代码运行在web环境中
-- node：打包后的代码运行在node环境中
-- 其他：https://www.webpackjs.com/configuration/target/
-
-## module.noParse
-
-```js
-noParse: /jquery/
-```
-
-不解析正则表达式匹配的模块，通常用它来忽略那些大型的单模块库，以提高**构建性能**
-
-## resolve
-
-resolve的相关配置主要用于控制模块解析过程
-
-### modules
-
-```js
-modules: ["node_modules"]  //默认值
-```
-
-当解析模块时，如果遇到导入语句，```require("test")```，webpack会从下面的位置寻找依赖的模块
-
-1. 当前目录下的```node_modules```目录
-2. 上级目录下的```node_modules```目录
-3. ...
-
-### extensions
-
-```js
-extensions: [".js", ".json"]  //默认值
-```
-
-当解析模块时，遇到无具体后缀的导入语句，例如```require("test")```，会依次测试它的后缀名
-
-- test.js
-- test.json
-
-### alias
-
-```js
-alias: {
-  "@": path.resolve(__dirname, 'src'),
-  "_": __dirname
+//file-loader
+function loader(source){
+	// source：文件内容（图片内容 buffer）
+	// 1. 生成一个具有相同文件内容的文件到输出目录
+	// 2. 返回一段代码   export default "文件名"
 }
 ```
 
-有了alias（别名）后，导入语句中可以加入配置的键名，例如```require("@/abc.js")```，webpack会将其看作是```require(src的绝对路径+"/abc.js")```。
+## 文件处理  --  url-loader
+将依赖的文件转换为：导出一个base64格式的字符串
 
-在大型系统中，源码结构往往比较深和复杂，别名配置可以让我们更加方便的导入依赖
-
-## externals
 
 ```js
-externals: {
-    jquery: "$",
-    lodash: "_"
+//file-loader
+function loader(source){
+	// source：文件内容（图片内容 buffer）
+	// 1. 根据buffer生成一个base64编码
+	// 2. 返回一段代码   export default "base64编码"
 }
 ```
 
-从最终的bundle中排除掉配置的配置的源码，例如，入口模块是
+
+## webpack内置插件  --  DefinePlugin
+
+
+所有的webpack内置插件都作为webpack的静态属性存在的，使用下面的方式即可创建一个插件对象
 
 ```js
-//index.js
-require("jquery")
-require("lodash")
+const webpack = require("webpack")
+
+new webpack.插件名(options)
 ```
 
-生成的bundle是：
+全局常量定义插件，使用该插件通常定义一些常量值，例如：
 
 ```js
-(function(){
-    ...
-})({
-    "./src/index.js": function(module, exports, __webpack_require__){
-        __webpack_require__("jquery")
-        __webpack_require__("lodash")
-    },
-    "jquery": function(module, exports){
-        //jquery的大量源码
-    },
-    "lodash": function(module, exports){
-        //lodash的大量源码
-    },
+new webpack.DefinePlugin({
+    PI: `Math.PI`, // PI = Math.PI
+    VERSION: `"1.0.0"`, // VERSION = "1.0.0"
+    DOMAIN: JSON.stringify("duyi.com")
 })
 ```
 
-但有了上面的配置后，则变成了
+这样一来，在源码中，我们可以直接使用插件中提供的常量，当webpack编译完成后，会自动替换为常量的值
+
+## webpack内置插件  --  BannerPlugin
+
+它可以为每个chunk生成的文件头部添加一行注释，一般用于添加作者、公司、版权等信息
 
 ```js
-(function(){
-    ...
-})({
-    "./src/index.js": function(module, exports, __webpack_require__){
-        __webpack_require__("jquery")
-        __webpack_require__("lodash")
-    },
-    "jquery": function(module, exports){
-        module.exports = $;
-    },
-    "lodash": function(module, exports){
-        module.exports = _;
-    },
+new webpack.BannerPlugin({
+  banner: `
+  hash:[hash]
+  chunkhash:[chunkhash]
+  name:[name]
+  author:yuanjin
+  corporation:duyi
+  `
 })
 ```
 
-这比较适用于一些第三方库来自于外部CDN的情况，这样一来，即可以在页面中使用CDN，又让bundle的体积变得更小，还不影响源码的编写
+## webpack内置插件  --  ProvidePlugin
 
-## stats
+自动加载模块，而不必到处 import 或 require 
 
-stats控制的是构建过程中控制台的输出内容
+```js
+new webpack.ProvidePlugin({
+  $: 'jquery',
+  _: 'lodash'
+})
+```
+
+然后在我们任意源码中：
+
+```js
+$('#item'); // <= 起作用
+_.drop([1, 2, 3], 2); // <= 起作用
+```
