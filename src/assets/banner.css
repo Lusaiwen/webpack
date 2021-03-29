@@ -1,0 +1,9 @@
+@import './pager.css';
+
+.red {
+  color: red;
+  background: url('./bg.png');
+  width: 600px;
+  height: 600px;
+  color: yellow;
+}
