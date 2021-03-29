@@ -1,7 +1,9 @@
-import styles from './assets/index.pcss';
+import styles from './assets/index.css';
 
 
-console.log(styles);
-const dom = document.getElementById("app");
-dom.className = styles.danger;
 
+
+const div = document.createElement('div');
+div.className = styles.main;
+
+document.body.appendChild(div);
