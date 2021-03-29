@@ -1,13 +1,8 @@
-var str = require('./assets/banner.css')
+import styles from './assets/index.less';
 
-console.log(str.default.toString());
+console.log(styles); 
 
-console.log(str);
-
-// var result = str.default.toString();
-
-
-// const style = document.createElement('style');
-// style.innerHTML = result;
-
-// document.head.appendChild(style);
+//css module
+const app = document.getElementById('app');
+console.log(app);
+app.className = styles.app;
