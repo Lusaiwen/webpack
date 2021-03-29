@@ -1,8 +1,7 @@
-import styles from './assets/index.less';
+import styles from './assets/index.pcss';
 
-console.log(styles); 
 
-//css module
-const app = document.getElementById('app');
-console.log(app);
-app.className = styles.app;
+console.log(styles);
+const dom = document.getElementById("app");
+dom.className = styles.danger;
+

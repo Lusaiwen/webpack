@@ -4,17 +4,15 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
     mode: 'development',
     //   watch: true,
-    output: {
-        filename: 'index.js'
-    },
+      devtool: 'source-map',
     devServer: {
         open: true,
         port: 8000,
     },
     module: {
         rules: [
-            // {test: /.css$/, use: ['style-loader', 'css-loader']},
-            {test: /.less$/, use: ['style-loader', 'css-loader?modules', 'less-loader']}
+            {test: /.pcss$/, use: ['style-loader', 'css-loader?modules', 'postcss-loader']},
+            // {test: /.less$/, use: ['style-loader', 'css-loader?modules', 'less-loader']}
         ]
     },
     plugins: [
