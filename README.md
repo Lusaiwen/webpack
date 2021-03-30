@@ -1,65 +1,151 @@
-# 热替换 HMR {ignore}
+# 手动分包 {ignore}
 
-> 热替换并不能降低构建时间（可能还会稍微增加），但可以降低代码改动到效果呈现的时间
+# 基本原理
 
-当使用`webpack-dev-server`时，考虑代码改动到效果呈现的过程
+手动分包的总体思路是：
 
-![|400](assets/2020-02-21-14-20-49.png)
+1. 先单独的打包公共模块
 
-而使用了热替换后，流程发生了变化
+![单独打包公共模块](assets/2020-02-24-13-24-57.png)
 
-![|400](assets/2020-02-21-14-22-32.png)
+公共模块会被打包成为动态链接库(dll Dynamic Link Library)，并生成资源清单
 
-# 使用和原理
+2. 根据入口模块进行正常打包
 
-1. 更改配置
+打包时，如果发现模块中使用了资源清单中描述的模块，则不会形成下面的代码结构
+
+```js
+//源码，入口文件index.js
+import $ from "jquery"
+import _ from "lodash"
+_.isArray($(".red"));
+```
+
+由于资源清单中包含`jquery`和`lodash`两个模块，因此打包结果的大致格式是：
+
+```js
+(function(modules){
+  //...
+})({
+  // index.js文件的打包结果并没有变化
+  "./src/index.js":
+  function(module, exports, __webpack_require__){
+    var $ = __webpack_require__("./node_modules/jquery/index.js")
+    var _ = __webpack_require__("./node_modules/lodash/index.js")
+    _.isArray($(".red"));
+  },
+  // 由于资源清单中存在，jquery的代码并不会出现在这里
+  "./node_modules/jquery/index.js":
+  function(module, exports, __webpack_require__){
+    module.exports = jquery;
+  },
+  // 由于资源清单中存在，lodash的代码并不会出现在这里
+  "./node_modules/lodash/index.js":
+  function(module, exports, __webpack_require__){
+    module.exports = lodash;
+  }
+})
+```
+
+# 打包公共模块
+
+打包公共模块是一个**独立的**打包过程
+
+1. 单独打包公共模块，暴露变量名
+
+```js
+// webpack.dll.config.js
+module.exports = {
+  mode: "production",
+  entry: {
+    jquery: ["jquery"],
+    lodash: ["lodash"]
+  },
+  output: {
+    filename: "dll/[name].js",
+    library: "[name]"
+  }
+};
+
+```
+
+2. 利用`DllPlugin`生成资源清单
+
+```js
+// webpack.dll.config.js
+module.exports = {
+  plugins: [
+    new webpack.DllPlugin({
+      path: path.resolve(__dirname, "dll", "[name].manifest.json"), //资源清单的保存位置
+      name: "[name]"//资源清单中，暴露的变量名
+    })
+  ]
+};
+
+```
+
+运行后，即可完成公共模块打包
+
+# 使用公共模块
+
+1. 在页面中手动引入公共模块
+
+```html
+<script src="./dll/jquery.js"></script>
+<script src="./dll/lodash.js"></script>
+```
+
+2. 重新设置`clean-webpack-plugin`
+
+如果使用了插件`clean-webpack-plugin`，为了避免它把公共模块清除，需要做出以下配置
+
+```js
+new CleanWebpackPlugin({
+  // 要清除的文件或目录
+  // 排除掉dll目录本身和它里面的文件
+  cleanOnceBeforeBuildPatterns: ["**/*", '!dll', '!dll/*']
+})
+```
+
+> 目录和文件的匹配规则使用的是[globbing patterns](https://github.com/sindresorhus/globby#globbing-patterns)
+
+3. 使用`DllReferencePlugin`控制打包结果
 
 ```js
 module.exports = {
-  devServer:{
-    hot:true // 开启HMR
-  },
-  plugins:[ 
-    // 可选
-    new webpack.HotModuleReplacementPlugin()
+  plugins:[
+    new webpack.DllReferencePlugin({
+      manifest: require("./dll/jquery.manifest.json")
+    }),
+    new webpack.DllReferencePlugin({
+      manifest: require("./dll/lodash.manifest.json")
+    })
   ]
 }
+
 ```
 
-2. 更改代码
+# 总结
 
-```js
-// index.js
+**手动打包的过程**：
 
-if(module.hot){ // 是否开启了热更新
-  module.hot.accept() // 接受热更新
-}
-```
+1. 开启`output.library`暴露公共模块
+2. 用`DllPlugin`创建资源清单
+3. 用`DllReferencePlugin`使用资源清单
 
-首先，这段代码会参与最终运行！
+**手动打包的注意事项**：
 
-当开启了热更新后，`webpack-dev-server`会向打包结果中注入`module.hot`属性
+1. 资源清单不参与运行，可以不放到打包目录中
+2. 记得手动引入公共JS，以及避免被删除
+3. 不要对小型的公共JS库使用
 
-默认情况下，`webpack-dev-server`不管是否开启了热更新，当重新打包后，都会调用`location.reload`刷新页面
+**优点**：
 
-但如果运行了`module.hot.accept()`，将改变这一行为
+1. 极大提升自身模块的打包速度
+2. 极大的缩小了自身文件体积
+3. 有利于浏览器缓存第三方库的公共代码
 
-`module.hot.accept()`的作用是让`webpack-dev-server`通过`socket`管道，把服务器更新的内容发送到浏览器
+**缺点**：
 
-![|300](assets/2020-02-21-14-34-05.png)
-
-然后，将结果交给插件`HotModuleReplacementPlugin`注入的代码执行
-
-插件`HotModuleReplacementPlugin`会根据覆盖原始代码，然后让代码重新执行
-
-**所以，热替换发生在代码运行期**
-
-# 样式热替换
-
-对于样式也是可以使用热替换的，但需要使用`style-loader`
-
-因为热替换发生时，`HotModuleReplacementPlugin`只会简单的重新运行模块代码
-
-因此`style-loader`的代码一运行，就会重新设置`style`元素中的样式
-
-而`mini-css-extract-plugin`，由于它生成文件是在**构建期间**，运行期间并会也无法改动文件，因此它对于热替换是无效的
+1. 使用非常繁琐
+2. 如果第三方库中包含重复代码，则效果不太理想
