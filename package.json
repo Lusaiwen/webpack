@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "babel js -d dist -w"
+    "build": "babel js -d dist -w",
+    "dev": "webpack",
+    "serve": "webpack serve"
   },
   "repository": {
     "type": "git",
@@ -20,7 +22,10 @@
     "@babel/cli": "^7.13.14",
     "@babel/core": "^7.13.14",
     "@babel/preset-env": "^7.13.12",
+    "babel-loader": "^8.2.2",
     "babel-plugin-transform-remove-console": "^6.9.4",
+    "cache-loader": "^4.1.0",
+    "thread-loader": "^3.0.1",
     "webpack": "^5.20.1",
     "webpack-cli": "^4.5.0",
     "webpack-dev-server": "^3.11.2"
