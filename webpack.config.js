@@ -1,22 +1,23 @@
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
 module.exports = {
-    mode: "development",
-    devtool: "source-map",
+    mode: 'development',
+    devtool: 'source-map',
+    devServer: {
+        open: true,
+        port: 8000,
+        hot: true
+    },
     module: {
-      rules: [
-        {
-          test: /\.js$/,
-          use: [
+        rules: [
             {
-              loader: "cache-loader",
-              options:{
-                cacheDirectory: "./cache"
-              }
-            },
-            // "thread-loader",//开启多线程
-            "babel-loader"
-          ]
-        }
-      ]
-    }
-  };
-  
+                test: /\.css/, use: ['style-loader', 'css-loader']
+            }
+        ]
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: './public/index.html'
+        })
+    ]
+}

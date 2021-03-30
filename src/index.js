@@ -1,9 +1,6 @@
-import _ from "lodash";
+import './a'
+import './assets/index.css'
 
-const obj = {
-  0: "a",
-  1: "b"
-};
-
-const result = _.isArray(obj);
-console.log(result);
+if(module.hot){
+    module.hot.accept();
+}
