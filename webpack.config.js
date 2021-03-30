@@ -1,37 +1,58 @@
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const webpack = require('webpack');
-
+const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 module.exports = {
-    mode: 'development',
-    devtool: 'source-map',
+    // mode: 'production',
+    mode: 'production',
     entry: {
-        main: './src/index.js',
-        other: './src/other.js',
+        page1: './src/page1.js',
+        page2: './src/page2.js',
     },
     output: {
-        filename: '[name][hash:5].js',
+        filename: '[name].[hash:5].js',
+        path: path.resolve(__dirname, 'dist'),
+    },
+    optimization: {
+        splitChunks: {
+            //分包配置
+            chunks: 'all',
+            // maxSize: 60000,
+            // automaticNameDelimiter: ".",
+            // minChunks: 1,
+            // minSize: 0,
+            cacheGroups: {
+                styles: {
+                    minSize: 0,
+                    test: /\.css$/,
+                    minChunks: 2,
+                },
+            },
+        },
     },
     module: {
         rules: [
             {
-                test: /\.css/,
-                use: ['style-loader', 'css-loader'],
+                test: /\.css$/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader'],
             },
         ],
     },
     plugins: [
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: ['**/*', '!dll', '!dll/*'],
+        new CleanWebpackPlugin(),
+        new MiniCssExtractPlugin({
+            filename: '[name].[hash:5].css',
+            chunkFilename: 'common.[hash:5].css',
         }),
         new HtmlWebpackPlugin({
             template: './public/index.html',
-        }),
-        new webpack.DllReferencePlugin({
-            manifest: require('./dll/jquery.manifest.json'),
-        }),
-        new webpack.DllReferencePlugin({
-            manifest: require('./dll/lodash.manifest.json'),
-        }),
+            // chunks: ['page1']
+        })
     ],
+
+    stats: {
+        colors: true,
+        chunks: false,
+        modules: false,
+    },
 };
