@@ -1,7 +1,15 @@
-import './index.css'
+import {add, random, myChunk} from './myMath'
+import './common'
+
+import './common.css'
+// import {chunk } from 'lodash-es'
+// import { chunk }from 'lodash'
 
 
-const a = new Date();
-const b = 'nbbb';
 
-console.log(a + b);
+
+console.log(add(1, 2));
+
+console.log(random());
+
+console.log(myChunk([2,34,45,5,6], 2));

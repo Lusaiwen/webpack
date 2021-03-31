@@ -1,61 +1,126 @@
-# 代码压缩 {ignore}
+# tree shaking {ignore}
 
-# 前言
+> 压缩可以移除模块内部的无效代码
+> tree shaking 可以移除模块之间的无效代码
 
-1. **为什么要进行代码压缩**
+![](https://user-gold-cdn.xitu.io/2018/1/4/160bfdcf2a31ce4a?imageslim)
 
-减少代码体积；破坏代码的可读性，提升破解成本；
+# 背景
 
-2. **什么时候要进行代码压缩**
-
-生产环境
-
-3. **使用什么压缩工具**
-
-目前最流行的代码压缩工具主要有两个：`UglifyJs`和`Terser`
-
-`UglifyJs`是一个传统的代码压缩工具，已存在多年，曾经是前端应用的必备工具，但由于它不支持`ES6`语法，所以目前的流行度已有所下降。
-
-`Terser`是一个新起的代码压缩工具，支持`ES6+`语法，因此被很多构建工具内置使用。`webpack`安装后会内置`Terser`，当启用生产环境后即可用其进行代码压缩。
-
-因此，我们选择`Terser`
-
-
-**关于副作用 side effect**
-
-副作用：函数运行过程中，可能会对外部环境造成影响的功能
-
-如果函数中包含以下代码，该函数叫做副作用函数:
-
-- 异步代码
-- localStorage
-- 对外部数据的修改
-
-如果一个函数没有副作用，同时，函数的返回结果仅依赖参数，则该函数叫做纯函数(pure function)
-
-# Terser
-
-在`Terser`的官网可尝试它的压缩效果
-
-> Terser官网：https://terser.org/
-
-# webpack+Terser
-
-webpack自动集成了Terser
-
-如果你想更改、添加压缩工具，又或者是想对Terser进行配置，使用下面的webpack配置即可
+某些模块导出的代码并不一定会被用到
 
 ```js
-const TerserPlugin = require('terser-webpack-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
-module.exports = {
-  optimization: {
-    // 是否要启用压缩，默认情况下，生产环境会自动开启
-    minimize: true, 
-    minimizer: [ // 压缩时使用的插件，可以有多个
-      new TerserPlugin(), 
-      new OptimizeCSSAssetsPlugin()
-    ],
-  },
-};
-``
+// myMath.js
+export function add(a, b){
+  console.log("add")
+  return a+b;
+}
+
+export function sub(a, b){
+  console.log("sub")
+  return a-b;
+}
+```
+
+```js
+// index.js
+import {add} from "./myMath"
+console.log(add(1,2));
+```
+
+tree shaking 用于移除掉不会用到的导出
+
+# 使用
+
+`webpack2`开始就支持了`tree shaking`
+
+只要是生产环境，`tree shaking`自动开启
+
+# 原理
+
+webpack会从入口模块出发寻找依赖关系
+
+当解析一个模块时，webpack会根据ES6的模块导入语句来判断，该模块依赖了另一个模块的哪个导出
+
+webpack之所以选择ES6的模块导入语句，是因为ES6模块有以下特点：
+
+1. 导入导出语句只能是顶层语句
+2. import的模块名只能是字符串常量
+3. import绑定的变量是不可变的
+
+这些特征都非常有利于分析出稳定的依赖
+
+在具体分析依赖时，webpack坚持的原则是：**保证代码正常运行，然后再尽量tree shaking**
+
+所以，如果你依赖的是一个导出的对象，由于JS语言的动态特性，以及`webpack`还不够智能，为了保证代码正常运行，它不会移除对象中的任何信息
+
+因此，我们在编写代码的时候，**尽量**：
+
+- 使用`export xxx`导出，而不使用`export default {xxx}`导出
+- 使用`import {xxx} from "xxx"`导入，而不使用`import xxx from "xxx"`导入
+
+依赖分析完毕后，`webpack`会根据每个模块每个导出是否被使用，标记其他导出为`dead code`，然后交给代码压缩工具处理
+
+代码压缩工具最终移除掉那些`dead code`代码
+
+# 使用第三方库
+
+某些第三方库可能使用的是`commonjs`的方式导出，比如`lodash`
+
+又或者没有提供普通的ES6方式导出
+
+对于这些库，`tree shaking`是无法发挥作用的
+
+因此要寻找这些库的`es6`版本，好在很多流行但没有使用的`ES6`的第三方库，都发布了它的`ES6`版本，比如`lodash-es`
+
+# 作用域分析
+
+`tree shaking`本身并没有完善的作用域分析，可能导致在一些`dead code`函数中的依赖仍然会被视为依赖
+
+插件`webpack-deep-scope-plugin`提供了作用域分析，可解决这些问题
+
+# 副作用问题
+
+webpack在`tree shaking`的使用，有一个原则：**一定要保证代码正确运行**
+
+在满足该原则的基础上，再来决定如何`tree shaking`
+
+因此，当`webpack`无法确定某个模块是否有副作用时，它往往将其视为有副作用
+
+因此，某些情况可能并不是我们所想要的
+
+```js
+//common.js
+var n  = Math.random();
+
+//index.js
+import "./common.js"
+```
+
+虽然我们根本没用有`common.js`的导出，但`webpack`担心`common.js`有副作用，如果去掉会影响某些功能
+
+如果要解决该问题，就需要标记该文件是没有副作用的
+
+在`package.json`中加入`sideEffects`
+```json
+{
+    "sideEffects": false
+}
+```
+
+有两种配置方式：
+
+- false：当前工程中，所有模块都没有副作用。注意，这种写法会影响到某些css文件的导入
+- 数组：设置哪些文件拥有副作用，例如：`["!src/common.js"]`，表示只要不是`src/common.js`的文件，都有副作用
+
+> 这种方式我们一般不处理，通常是一些第三方库在它们自己的`package.json`中标注
+
+# css tree shaking
+
+`webpack`无法对`css`完成`tree shaking`，因为`css`跟`es6`没有半毛钱关系
+
+因此对`css`的`tree shaking`需要其他插件完成
+
+例如：`purgecss-webpack-plugin`
+
+> 注意：`purgecss-webpack-plugin`对`css module`无能为力
