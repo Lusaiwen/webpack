@@ -1,34 +1,26 @@
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const TerserPlugin = require("terser-webpack-plugin")
+const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+
+
 module.exports = {
     // mode: 'production',
     mode: 'production',
-    entry: {
-        page1: './src/page1.js',
-        page2: './src/page2.js',
-    },
     output: {
         filename: '[name].[hash:5].js',
         path: path.resolve(__dirname, 'dist'),
     },
     optimization: {
-        splitChunks: {
-            //分包配置
-            chunks: 'all',
-            // maxSize: 60000,
-            // automaticNameDelimiter: ".",
-            // minChunks: 1,
-            // minSize: 0,
-            cacheGroups: {
-                styles: {
-                    minSize: 0,
-                    test: /\.css$/,
-                    minChunks: 2,
-                },
-            },
-        },
+        // 是否要启用压缩，默认情况下，生产环境会自动开启
+        // minimize: true,
+        minimizer: [
+            // 压缩时使用的插件，可以有多个
+            new TerserPlugin(),
+            new OptimizeCSSAssetsPlugin(),
+        ],
     },
     module: {
         rules: [
@@ -47,7 +39,7 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './public/index.html',
             // chunks: ['page1']
-        })
+        }),
     ],
 
     stats: {

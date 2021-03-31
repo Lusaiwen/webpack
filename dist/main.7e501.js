@@ -1,0 +1,1 @@
+(()=>{"use strict";const e=new Date;console.log(e+"nbbb")})();
