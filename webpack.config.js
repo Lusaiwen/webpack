@@ -15,18 +15,11 @@ module.exports = {
         filename: '[name].[chunkhash:5].js',
         path: path.resolve(__dirname, 'dist'),
     },
-    module: {
-        rules: [{ test: /\.css$/, use: [MiniCssExtractPlugin.loader, "css-loader"] }]
-      },
     plugins: [
-        new CleanWebpackPlugin(),
-        new MiniCssExtractPlugin(),
         new HtmlWebpackPlugin({
             template: './public/index.html',
         }),
-        new Purgecss({
-            paths,
-        }),
+        new CleanWebpackPlugin(),
     ],
 
     stats: {
